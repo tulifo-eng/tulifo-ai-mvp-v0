@@ -1,0 +1,486 @@
+// Centralized configuration for all job board sources
+// type: 'api' | 'rss' | 'scrape'
+// status: 'active' | 'ready' | 'no-api' | 'dead' | 'restricted'
+
+module.exports = {
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ✅ ACTIVE — fetching live data
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  jsearch: {
+    name: 'JSearch',
+    emoji: '🌐',
+    type: 'api',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://api.openwebninja.com/jsearch/search',
+    rateLimit: 'varies',
+    requiresAuth: true,
+    credentialsNeeded: ['JSEARCH_API_KEY'],
+    notes: 'Aggregates jobs from LinkedIn, Indeed, Glassdoor & more via OpenWebNinja.',
+  },
+
+  adzuna: {
+    name: 'Adzuna',
+    emoji: '🔍',
+    type: 'api',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://api.adzuna.com/v1/api/jobs',
+    rateLimit: '250/month',
+    requiresAuth: true,
+    credentialsNeeded: ['ADZUNA_APP_ID', 'ADZUNA_APP_KEY'],
+    country: 'us',
+    notes: 'US job board with salary data. Free tier = 250 calls/month.',
+  },
+
+  remotive: {
+    name: 'Remotive',
+    emoji: '🚀',
+    type: 'api',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://remotive.com/api/remote-jobs',
+    rateLimit: 'unlimited',
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Remote-only jobs. Free public API.',
+  },
+
+  remoteok: {
+    name: 'Remote OK',
+    emoji: '✅',
+    type: 'api',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://remoteok.com/remote-jobs.json',
+    rateLimit: 'unlimited',
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Remote-only jobs. Public JSON endpoint.',
+  },
+
+  weworkremotely: {
+    name: 'We Work Remotely',
+    emoji: '🏡',
+    type: 'rss',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://weworkremotely.com/remote-jobs.rss',
+    rateLimit: 'unlimited',
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Remote-only jobs. Public RSS feed.',
+  },
+
+  hn: {
+    name: "HN Who's Hiring",
+    emoji: '🅨',
+    type: 'api',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://hacker-news.firebaseio.com/v0',
+    rateLimit: 'unlimited',
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: "Monthly Hacker News Who's Hiring thread. Free Firebase API.",
+  },
+
+  greenhouse: {
+    name: 'Greenhouse',
+    emoji: '🌿',
+    type: 'api',
+    status: 'active',
+    enabled: true,
+    endpoint: 'https://boards-api.greenhouse.io/v1/boards',
+    rateLimit: 'unlimited',
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Fetches jobs from top tech companies using Greenhouse ATS. No API key needed.',
+    // Companies to fetch from. Add/remove board tokens here.
+    companies: [
+      { token: 'anthropic',      name: 'Anthropic'      },
+      { token: 'openai',         name: 'OpenAI'         },
+      { token: 'stripe',         name: 'Stripe'         },
+      { token: 'figma',          name: 'Figma'          },
+      { token: 'notion',         name: 'Notion'         },
+      { token: 'airbnb',         name: 'Airbnb'         },
+      { token: 'coinbase',       name: 'Coinbase'       },
+      { token: 'shopify',        name: 'Shopify'        },
+      { token: 'datadog',        name: 'Datadog'        },
+      { token: 'vercel',         name: 'Vercel'         },
+      { token: 'supabase',       name: 'Supabase'       },
+      { token: 'linear',         name: 'Linear'         },
+      { token: 'cloudflare',     name: 'Cloudflare'     },
+      { token: 'twilio',         name: 'Twilio'         },
+      { token: 'airtable',       name: 'Airtable'       },
+      { token: 'dropbox',        name: 'Dropbox'        },
+      { token: 'intercom',       name: 'Intercom'       },
+      { token: 'brex',           name: 'Brex'           },
+      { token: 'benchling',      name: 'Benchling'      },
+      { token: 'discord',        name: 'Discord'        },
+    ],
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ⚙️ READY — built, needs credentials
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  usajobs: {
+    name: 'USA Jobs',
+    emoji: '🏢',
+    type: 'api',
+    status: 'ready',
+    enabled: false,
+    endpoint: 'https://data.usajobs.gov/api/search',
+    rateLimit: 'unlimited',
+    requiresAuth: true,
+    credentialsNeeded: ['USAJOBS_API_KEY', 'USAJOBS_EMAIL'],
+    notes: 'US government jobs. Free API at usajobs.gov/developer.',
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔒 RESTRICTED — enterprise/partner API only
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  linkedin: {
+    name: 'LinkedIn',
+    emoji: '💼',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: 'https://api.linkedin.com/v2/jobs',
+    requiresAuth: true,
+    credentialsNeeded: ['LINKEDIN_CLIENT_ID', 'LINKEDIN_CLIENT_SECRET'],
+    notes: 'Requires LinkedIn partnership approval. Not accepting new partners.',
+  },
+
+  indeed: {
+    name: 'Indeed',
+    emoji: '🔍',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: 'https://apis.indeed.com',
+    requiresAuth: true,
+    credentialsNeeded: ['INDEED_API_KEY'],
+    notes: 'Publisher API deprecated. Sponsored Jobs API costs $3+/call.',
+  },
+
+  glassdoor: {
+    name: 'Glassdoor',
+    emoji: '🚪',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: 'https://api.glassdoor.com/api/api.htm',
+    requiresAuth: true,
+    credentialsNeeded: ['GLASSDOOR_PARTNER_ID', 'GLASSDOOR_KEY'],
+    notes: 'API closed to public since 2021. Requires registered API partner status.',
+  },
+
+  ziprecruiter: {
+    name: 'ZipRecruiter',
+    emoji: '⚡',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: true,
+    credentialsNeeded: ['ZIPRECRUITER_API_KEY'],
+    notes: 'No public API. Requires employer account or partner agreement.',
+  },
+
+  monster: {
+    name: 'Monster',
+    emoji: '👾',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: true,
+    credentialsNeeded: ['MONSTER_API_KEY'],
+    notes: 'Web Services API requires partner agreement. SOAP protocol.',
+  },
+
+  careerbuilder: {
+    name: 'CareerBuilder',
+    emoji: '🏢',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: true,
+    credentialsNeeded: ['CAREERBUILDER_API_KEY'],
+    notes: 'Requires partner-level client agreement. Not publicly accessible.',
+  },
+
+  wellfound: {
+    name: 'Wellfound',
+    emoji: '🌱',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Formerly AngelList Talent. No public job search API.',
+  },
+
+  levelsfyi: {
+    name: 'Levels.fyi',
+    emoji: '📊',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Compensation data platform. No public jobs API.',
+  },
+
+  arcdev: {
+    name: 'Arc.dev',
+    emoji: '🔷',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Remote developer marketplace. No public API.',
+  },
+
+  otta: {
+    name: 'Otta',
+    emoji: '🟦',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Now Welcome to the Jungle. No public API.',
+  },
+
+  cord: {
+    name: 'Cord',
+    emoji: '🔗',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Tech job platform. No public API.',
+  },
+
+  remoteco: {
+    name: 'Remote.co',
+    emoji: '🌍',
+    type: 'rss',
+    status: 'no-api',
+    enabled: false,
+    endpoint: 'https://remote.co/remote-jobs/feed/',
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'RSS feed exists but returns very few jobs and is unreliable.',
+  },
+
+  flexjobs: {
+    name: 'FlexJobs',
+    emoji: '🤸',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: true,
+    credentialsNeeded: ['FLEXJOBS_API_KEY'],
+    notes: 'Requires paid subscription ($15-$60/mo). No public API.',
+  },
+
+  jobspresso: {
+    name: 'Jobspresso',
+    emoji: '☕',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Curated remote jobs. No public API or RSS.',
+  },
+
+  ycjobs: {
+    name: 'YC Jobs',
+    emoji: '🚀',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Work at a Startup (ycombinator.com/jobs). No public API.',
+  },
+
+  startupjobs: {
+    name: 'Startup Jobs',
+    emoji: '💡',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'No public API.',
+  },
+
+  pallet: {
+    name: 'Pallet',
+    emoji: '🎨',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Creator community job boards. No unified public API.',
+  },
+
+  foundersnetwork: {
+    name: 'Founders Network',
+    emoji: '🌐',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Membership-based founder network. No public jobs API.',
+  },
+
+  blind: {
+    name: 'Blind',
+    emoji: '👁',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Anonymous professional community. Not a job board with public API.',
+  },
+
+  toptal: {
+    name: 'Toptal',
+    emoji: '🏅',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Vetted freelancer marketplace. No public API.',
+  },
+
+  upwork: {
+    name: 'Upwork',
+    emoji: '💻',
+    type: 'api',
+    status: 'restricted',
+    enabled: false,
+    endpoint: 'https://www.upwork.com/api',
+    requiresAuth: true,
+    credentialsNeeded: ['UPWORK_CLIENT_ID', 'UPWORK_CLIENT_SECRET'],
+    notes: 'Requires OAuth app approval from Upwork.',
+  },
+
+  gunio: {
+    name: 'Gun.io',
+    emoji: '🔫',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Vetted developer marketplace. No public API.',
+  },
+
+  snagajob: {
+    name: 'Snagajob',
+    emoji: '🤝',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Hourly/shift work jobs. No public API.',
+  },
+
+  comprehensive: {
+    name: 'Comprehensive',
+    emoji: '💰',
+    type: 'api',
+    status: 'no-api',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Compensation-focused job board. No public API.',
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 💀 DEAD — shut down
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  github: {
+    name: 'GitHub Jobs',
+    emoji: '🐙',
+    type: 'api',
+    status: 'dead',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Shut down August 2021.',
+  },
+
+  stackoverflow: {
+    name: 'Stack Overflow',
+    emoji: '📚',
+    type: 'api',
+    status: 'dead',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Jobs section discontinued March 2022.',
+  },
+
+  dice: {
+    name: 'Dice',
+    emoji: '🎲',
+    type: 'api',
+    status: 'dead',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'Public API shut down October 2017.',
+  },
+
+  simplyhired: {
+    name: 'SimplyHired',
+    emoji: '🎯',
+    type: 'api',
+    status: 'dead',
+    enabled: false,
+    endpoint: null,
+    requiresAuth: false,
+    credentialsNeeded: [],
+    notes: 'API no longer maintained.',
+  },
+};
