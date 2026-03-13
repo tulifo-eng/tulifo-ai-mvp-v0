@@ -3,16 +3,21 @@ const express = require('express');
 const cors = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
 const { aggregateJobs } = require('./jobAggregator');
-const { addFeedback }  = require('./feedbackStore');
+const { addFeedback } = require('./feedbackStore');
 const { scoreJobs } = require('./aiScoring');
 const analytics = require('./analytics');
-const adminRoutes    = require('./adminRoutes');
+const adminRoutes = require('./adminRoutes');
 const trackingRoutes = require('./trackingRoutes');
 const perfMiddleware = require('./perfMiddleware');
-const jobSources     = require('./config/jobSources');
+const jobSources = require('./config/jobSources');
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    process.env.FRONTEND_URL || 'https://tulifo-ai-mvp-v0.onrender.com'
+  ]
+}));
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/track', trackingRoutes);
 app.use(perfMiddleware);
@@ -20,7 +25,12 @@ app.use(perfMiddleware);
 // ── Admin server on its own port ──────────────────────────────────────────────
 const ADMIN_PORT = process.env.ADMIN_PORT || 5051;
 const adminApp = express();
-adminApp.use(cors({ origin: 'http://localhost:3000' }));
+adminApp.use(cors({
+  origin: [
+    'http://localhost:3000',
+    process.env.FRONTEND_URL || 'https://tulifo-ai-mvp-v0.onrender.com'
+  ]
+}));
 adminApp.use(express.json({ limit: '2mb' }));
 adminApp.use('/api/admin', adminRoutes);
 adminApp.listen(ADMIN_PORT, () => {
@@ -31,7 +41,7 @@ const PORT = process.env.PORT || 5050;
 const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
 const client = hasApiKey ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
 
-const hasAdzuna  = !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY && process.env.ADZUNA_APP_ID !== 'your_app_id_here');
+const hasAdzuna = !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY && process.env.ADZUNA_APP_ID !== 'your_app_id_here');
 const hasUSAJobs = !!(process.env.USAJOBS_API_KEY && process.env.USAJOBS_EMAIL);
 const hasJSearch = !!process.env.JSEARCH_API_KEY;
 
@@ -171,7 +181,7 @@ function extractSearchParams(text, messages, userProfile) {
   }
 
   // ── Fall back to profile only for whatever is still missing ──────────────────
-  if (!query)    query    = (userProfile?.role     || '').trim();
+  if (!query) query = (userProfile?.role || '').trim();
   if (!location) location = (userProfile?.location || '').trim();
 
   return { query: query.trim(), location: location.trim() };
@@ -352,8 +362,8 @@ app.post('/api/feedback', (req, res) => {
   const safeRating = Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
 
   const entry = addFeedback({
-    type:      safeType,
-    rating:    safeRating,
+    type: safeType,
+    rating: safeRating,
     message,
     email,
     page,
@@ -386,7 +396,13 @@ app.get('/api/health', (req, res) => {
     },
   });
 });
-
+// ── Serve React frontend in production ────────────────────────────────────────
+const path = require('path');
+const buildPath = path.join(__dirname, '..', 'build');
+app.use(express.static(buildPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'));
+});
 app.listen(PORT, () => {
   console.log(`\nTulifo AI server v2.0.0 running on http://localhost:${PORT}`);
   console.log(`AI (Claude):  ${hasApiKey ? 'enabled' : 'disabled — set ANTHROPIC_API_KEY'}`);

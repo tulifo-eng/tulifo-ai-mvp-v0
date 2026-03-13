@@ -21,6 +21,10 @@
     "server": "cd server && npm start",
     "dev": "concurrently --kill-others-on-fail \"npm run server\" \"npm start\"",
     "build": "react-scripts build",
+    "build:server": "cd server && npm run build",
+    "build:all": "npm run build && npm run build:server",
+    "render-build": "npm install && cd server && npm install && cd .. && npm run build",
+    "render-start": "cd server && node index.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
