@@ -5,9 +5,9 @@ import { supabase } from './supabase';
 import AdminPanel from './AdminPanel';
 import { initTracker, trackEvent, identifyUser, startHeartbeat } from './tracker';
 import {
-  Search, Bookmark, ExternalLink, LogIn, User, Briefcase,
+  Search, Bookmark, LogIn, User, Briefcase,
   MapPin, DollarSign, Zap, Send, X, Sparkles, Bot, ArrowRight,
-  Filter, TrendingUp, Globe, Clock,
+  Filter, TrendingUp, Globe,
   ChevronRight, ChevronLeft, Star, CheckCircle2,
   MessageSquare, BarChart3, Layers, Shield, Cpu, MessageCircle,
   ThumbsUp, Bug, Lightbulb
@@ -23,25 +23,6 @@ function useWindowWidth() {
   }, []);
   return w;
 }
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const DEMO_JOBS = [
-  { id: 1,  title: 'Senior Frontend Engineer',   company: 'Stripe',       location: 'San Francisco, CA', salary: '$160k–$220k',    tags: ['React','TypeScript','GraphQL'], board: 'LinkedIn',  url: 'https://www.linkedin.com/jobs/search/?keywords=Senior+Frontend+Engineer&location=San+Francisco', logo: '💳', posted: '2d ago', remote: true,  match: 97 },
-  { id: 2,  title: 'ML Engineer – NLP',           company: 'OpenAI',       location: 'San Francisco, CA', salary: '$200k–$350k',    tags: ['Python','PyTorch','LLMs'],      board: 'Indeed',    url: 'https://www.indeed.com/jobs?q=ML+Engineer+NLP&l=San+Francisco%2C+CA',                            logo: '🤖', posted: '1d ago', remote: false, match: 94 },
-  { id: 3,  title: 'Product Manager, Growth',     company: 'Notion',       location: 'New York, NY',      salary: '$140k–$190k',    tags: ['Product','Growth','Analytics'], board: 'Glassdoor', url: 'https://www.glassdoor.com/Jobs/Notion-Jobs-E1555382.htm',                                           logo: '📝', posted: '3d ago', remote: true,  match: 89 },
-  { id: 4,  title: 'DevOps / Platform Engineer',  company: 'Vercel',       location: 'Remote',            salary: '$150k–$210k',    tags: ['Kubernetes','AWS','Terraform'], board: 'LinkedIn',  url: 'https://www.linkedin.com/jobs/search/?keywords=DevOps+Platform+Engineer+Vercel',                  logo: '▲',  posted: '5d ago', remote: true,  match: 91 },
-  { id: 5,  title: 'Data Scientist',              company: 'Airbnb',       location: 'Seattle, WA',       salary: '$155k–$205k',    tags: ['Python','SQL','Statistics'],    board: 'Indeed',    url: 'https://www.indeed.com/jobs?q=Data+Scientist&l=Seattle%2C+WA&employer=Airbnb',                     logo: '🏠', posted: '1w ago', remote: false, match: 86 },
-  { id: 6,  title: 'iOS Engineer',                company: 'Figma',        location: 'San Francisco, CA', salary: '$160k–$230k',    tags: ['Swift','SwiftUI','Metal'],      board: 'Glassdoor', url: 'https://www.glassdoor.com/Jobs/Figma-Jobs-E1468333.htm',                                            logo: '🎨', posted: '4d ago', remote: false, match: 83 },
-  { id: 7,  title: 'Backend Engineer – Go',       company: 'PlanetScale',  location: 'Remote',            salary: '$145k–$195k',    tags: ['Go','MySQL','Distributed'],     board: 'LinkedIn',  url: 'https://www.linkedin.com/jobs/search/?keywords=Backend+Engineer+Go+PlanetScale',                  logo: '🪐', posted: '2d ago', remote: true,  match: 90 },
-  { id: 8,  title: 'UX Designer',                 company: 'Linear',       location: 'Remote',            salary: '$120k–$160k',    tags: ['Figma','Design Systems','UX'],  board: 'Indeed',    url: 'https://www.indeed.com/jobs?q=UX+Designer+Linear&l=Remote',                                       logo: '⚡', posted: '6d ago', remote: true,  match: 78 },
-  { id: 9,  title: 'Staff Software Engineer',     company: 'Cloudflare',   location: 'Austin, TX',        salary: '$200k–$270k',    tags: ['Rust','C++','Networking'],      board: 'Glassdoor', url: 'https://www.glassdoor.com/Jobs/Cloudflare-Jobs-E749544.htm',                                        logo: '☁️', posted: '3d ago', remote: false, match: 92 },
-  { id: 10, title: 'Security Engineer',           company: 'Tailscale',    location: 'Remote',            salary: '$170k–$240k',    tags: ['Go','WireGuard','Zero-trust'],  board: 'LinkedIn',  url: 'https://www.linkedin.com/jobs/search/?keywords=Security+Engineer+Tailscale',                      logo: '🔒', posted: '1d ago', remote: true,  match: 88 },
-  { id: 11, title: 'Full Stack Engineer',         company: 'Supabase',     location: 'Remote',            salary: '$130k–$180k',    tags: ['Next.js','PostgreSQL','Rust'],  board: 'Indeed',    url: 'https://www.indeed.com/jobs?q=Full+Stack+Engineer+Supabase',                                      logo: '🟢', posted: '2w ago', remote: true,  match: 85 },
-  { id: 12, title: 'Engineering Manager',         company: 'Shopify',      location: 'Toronto, ON',       salary: '$180k–$250k',    tags: ['Leadership','Ruby','Scaling'],  board: 'Glassdoor', url: 'https://www.glassdoor.com/Jobs/Shopify-Jobs-E675953.htm',                                          logo: '🛍️', posted: '5d ago', remote: false, match: 80 },
-  { id: 13, title: 'AI/ML Research Engineer',     company: 'Anthropic',    location: 'San Francisco, CA', salary: '$250k–$400k',    tags: ['Python','JAX','RLHF'],          board: 'LinkedIn',  url: 'https://www.linkedin.com/jobs/search/?keywords=AI+ML+Research+Engineer+Anthropic',                logo: '🧠', posted: '3d ago', remote: false, match: 96 },
-  { id: 14, title: 'Developer Advocate',          company: 'Hashicorp',    location: 'Remote',            salary: '$130k–$170k',    tags: ['DevRel','Terraform','Go'],      board: 'Indeed',    url: 'https://www.indeed.com/jobs?q=Developer+Advocate+Hashicorp',                                      logo: '🏗️', posted: '1w ago', remote: true,  match: 76 },
-  { id: 15, title: 'Founding Engineer',           company: 'Seed Startup', location: 'New York, NY',      salary: '$140k + equity', tags: ['React','Node.js','Startup'],    board: 'LinkedIn',  url: 'https://www.linkedin.com/jobs/search/?keywords=Founding+Engineer+startup+seed&location=New+York', logo: '🚀', posted: '1d ago', remote: false, match: 82 },
-];
 
 // ─── Backend job normalization ────────────────────────────────────────────────
 
@@ -369,12 +350,6 @@ const JOB_BOARDS = [
   { name: 'CharityJob',        url: 'https://www.charityjob.co.uk',                 color: '#059669', icon: '❤️', category: 'Nonprofit'   },
 ];
 
-const BOARD_CATEGORIES = ['All', 'General', 'Tech', 'Remote', 'Startup', 'Internships', 'Finance', 'Creative', 'Nonprofit', 'Comp', 'Contract'];
-
-const BOARD_COLORS = {
-  LinkedIn: '#0077b5', Indeed: '#2164f3', Glassdoor: '#0caa41',
-  Wellfound: '#fb6500', 'Levels.fyi': '#7c3aed',
-};
 
 // ─── Slash command filter parser ──────────────────────────────────────────────
 function parseFilterCommand(input) {
@@ -410,81 +385,8 @@ function MsgText({ text }) {
   );
 }
 
-// ─── Match badge ──────────────────────────────────────────────────────────────
-function MatchBadge({ pct }) {
-  const color = pct >= 90 ? '#16a34a' : pct >= 80 ? '#2563eb' : '#d97706';
-  const bg    = pct >= 90 ? '#f0fdf4' : pct >= 80 ? '#eff6ff' : '#fffbeb';
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: bg, color, borderRadius: 7, padding: '3px 8px', fontSize: 11.5, fontWeight: 700 }}>
-      <Star size={10} fill={color} color={color} /> {pct}%
-    </span>
-  );
-}
-
-// ─── Trust Badge ──────────────────────────────────────────────────────────────
-function TrustBadge({ job }) {
-  return (
-    <span
-      title={`Trust score: ${job.trustScore}/100`}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 3,
-        background: job.trustBg, color: job.trustColor,
-        borderRadius: 6, padding: '2px 7px', fontSize: 10.5, fontWeight: 700,
-        border: `1px solid ${job.trustColor}30`, letterSpacing: '0.2px',
-        flexShrink: 0,
-      }}
-    >
-      {job.trustBadge}
-    </span>
-  );
-}
-
-// ─── Job Boards Sidebar ───────────────────────────────────────────────────────
-function JobBoardsSidebar() {
-  const [activeCategory, setActiveCategory] = useState('All');
-  const filtered = activeCategory === 'All' ? JOB_BOARDS : JOB_BOARDS.filter(b => b.category === activeCategory);
-  const countByCategory = cat => JOB_BOARDS.filter(b => b.category === cat).length;
-
-  return (
-    <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #e8edf5', overflow: 'hidden', boxShadow: '0 2px 12px rgba(30,58,138,0.06)', marginBottom: 14 }}>
-      {/* Header */}
-      <div style={{ padding: '14px 16px 12px', background: 'linear-gradient(135deg,#f8faff,#f0f4ff)', borderBottom: '1px solid #eef2f8' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: '#1e3a8a', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Job Boards</span>
-          <span style={{ fontSize: 11, fontWeight: 700, background: 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', borderRadius: 20, padding: '2px 9px' }}>
-            {JOB_BOARDS.length}
-          </span>
-        </div>
-        {/* Category filter */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {BOARD_CATEGORIES.map(cat => (
-            <button key={cat} className="pill-btn" onClick={() => setActiveCategory(cat)} style={{
-              background: activeCategory === cat ? 'linear-gradient(135deg,#2563eb,#7c3aed)' : '#fff',
-              color: activeCategory === cat ? '#fff' : '#64748b',
-              border: `1px solid ${activeCategory === cat ? 'transparent' : '#e2e8f0'}`,
-              boxShadow: activeCategory === cat ? '0 2px 8px rgba(37,99,235,0.3)' : 'none',
-            }}>
-              {cat}{cat !== 'All' ? ` ${countByCategory(cat)}` : ''}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Board list */}
-      <div style={{ maxHeight: 380, overflowY: 'auto', padding: '8px' }}>
-        {filtered.map(board => (
-          <a key={board.name} href={board.url} target="_blank" rel="noopener noreferrer" className="board-link">
-            <span style={{ fontSize: 16, lineHeight: 1, width: 22, textAlign: 'center', flexShrink: 0 }}>{board.icon}</span>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: board.color, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{board.name}</span>
-            <ExternalLink size={11} color="#cbd5e1" style={{ flexShrink: 0 }} />
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Landing Page ──────────────────────────────────────────────────────────────
+
 function HeroJobCard({ logo, title, company, salary, match, delay }) {
   return (
     <div className="hero-job-card" style={{ animationDelay: delay }}>
@@ -1077,81 +979,8 @@ function AuthPage({ onLogin }) {
   );
 }
 
-// ─── Profile Setup ────────────────────────────────────────────────────────────
-function ProfileSetup({ user, onDone }) {
-  const [role, setRole]         = useState('');
-  const [location, setLocation] = useState('');
-  const [salaryMin, setSalary]  = useState('');
-  const [skillsRaw, setSkills]  = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
 
-  const handleSubmit = async () => {
-    if (!role) { setError('Please enter your target role.'); return; }
-    setLoading(true);
-    setError('');
-    const salaryInt = salaryMin ? parseInt(salaryMin.replace(/\D/g, ''), 10) : null;
-    const profile = {
-      id: user.id,
-      name: user.name,
-      role,
-      location: location || null,
-      salary_min: salaryInt || null,
-      skills: skillsRaw ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
-    };
-    try {
-      if (supabase && !user.guest) {
-        const { error: dbErr } = await supabase.from('profiles').upsert(profile);
-        if (dbErr) throw dbErr;
-      }
-      onDone({ ...profile, salaryMin: profile.salary_min });
-    } catch (err) {
-      setError(err.message || 'Failed to save profile. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const iStyle = { width: '100%', padding: '12px 16px', borderRadius: 11, border: '1.5px solid #e2e8f0', fontSize: 14.5, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', color: '#0f172a', background: '#fafbff', transition: 'border-color 0.2s, box-shadow 0.2s' };
-
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(145deg,#f0f4ff,#faf5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: 480, background: '#fff', borderRadius: 24, padding: '40px', boxShadow: '0 8px 48px rgba(37,99,235,0.12)', animation: 'fadeUp 0.3s ease' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg,#2563eb,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(37,99,235,0.35)' }}>
-            <Sparkles size={26} color="#fff" />
-          </div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.8px', margin: '0 0 8px' }}>Set up your profile</h2>
-          <p style={{ fontSize: 14.5, color: '#94a3b8', margin: 0 }}>Help the AI find the best jobs for you.</p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Target role *</label>
-            <input style={iStyle} value={role} onChange={e => setRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Preferred location</label>
-            <input style={iStyle} value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. San Francisco, CA or Remote" />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Minimum salary (annual USD)</label>
-            <input style={iStyle} value={salaryMin} onChange={e => setSalary(e.target.value)} placeholder="e.g. 150000" type="number" min="0" />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Key skills (comma-separated)</label>
-            <input style={iStyle} value={skillsRaw} onChange={e => setSkills(e.target.value)} placeholder="e.g. React, TypeScript, Node.js" />
-          </div>
-          {error && <p style={{ color: '#ef4444', fontSize: 13, fontWeight: 600, margin: 0, background: '#fef2f2', padding: '10px 14px', borderRadius: 10, border: '1px solid #fecaca' }}>{error}</p>}
-          <button className="sign-in-btn" style={{ marginTop: 4 }} onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Saving…' : <><Sparkles size={16} /> Start finding jobs</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Dashboard ────────────────────────────────────────────────────────────────
 const SUGGESTIONS = [
   { label: 'Remote roles only', cmd: '/location Remote' },
   { label: 'Set salary floor', cmd: '/salary $150k' },
@@ -1178,7 +1007,6 @@ function Dashboard({ user, userProfile, setProfile, onLogout }) {
     location: userProfile?.location || '',
     salary:   userProfile?.salary_min ? `$${Number(userProfile.salary_min).toLocaleString()}` : '',
   });
-  const [selectedJob, setSelectedJob]   = useState(null);
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [isTyping, setIsTyping]       = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -1263,7 +1091,6 @@ function Dashboard({ user, userProfile, setProfile, onLogout }) {
       if (foundJobs && foundJobs.length > 0) {
         const normalized = foundJobs.map(normalizeJob);
         setJobs(normalized);
-        setSelectedJob(null);
         setView('all');
         setJobTab('All');
         setLastSearch({

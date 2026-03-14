@@ -965,7 +965,6 @@ function PerfTab({ perf, behavior }) {
 
   const api     = perf.api     || {};
   const vitals  = perf.vitals  || {};
-  const recent  = perf.recent  || [];
 
   const errorRate   = api.errorRate ?? 0;
   const avgMs       = api.overallAvgMs ?? 0;

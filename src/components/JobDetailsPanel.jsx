@@ -8,7 +8,6 @@ import {
 
 // ── Circular match arc ────────────────────────────────────────────────────────
 function MatchArc({ pct }) {
-  const color = pct >= 90 ? '#16a34a' : pct >= 80 ? '#2563eb' : '#d97706';
   const r = 28;
   const circumference = 2 * Math.PI * r;
   const dash = (pct / 100) * circumference;
