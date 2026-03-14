@@ -20,6 +20,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/track', trackingRoutes);
+app.use('/api/admin', adminRoutes);    // also on main port for production (Render)
 app.use(perfMiddleware);
 
 // ── Admin server on its own port ──────────────────────────────────────────────

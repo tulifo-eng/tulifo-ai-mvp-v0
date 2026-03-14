@@ -7,7 +7,7 @@ import {
   Eye, Bookmark, ExternalLink,
 } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_ADMIN_URL || 'http://localhost:5051';
+const API_BASE = process.env.REACT_APP_API_URL || '';
 const REFRESH_INTERVAL = 30000;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
