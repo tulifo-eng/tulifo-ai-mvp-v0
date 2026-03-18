@@ -17,7 +17,7 @@ module.exports = {
     endpoint: 'postgresql (direct)',
     rateLimit: 'unlimited',
     requiresAuth: true,
-    credentialsNeeded: ['SUPABASE_DB_URL'],
+    credentialsNeeded: ['SCRAPER_DB_URL'],
     notes: 'Jobs scraped from company career pages (Meta, Google, Apple, etc.) stored in Supabase PostgreSQL. Full-text search enabled.',
   },
 

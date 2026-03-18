@@ -764,7 +764,14 @@ async function aggregateJobs({ query = '', location = '', limit = 100 } = {}) {
   console.log(`[Aggregator] After trust filter: ${trusted.length} jobs`);
 
   const sorted = trusted
-    .sort((a, b) => new Date(b.postedAt || 0) - new Date(a.postedAt || 0))
+    .sort((a, b) => {
+      // 1. Highest priority: Tulifo DB jobs (vetted scraper data)
+      if (a.source === 'Tulifo DB' && b.source !== 'Tulifo DB') return -1;
+      if (b.source === 'Tulifo DB' && a.source !== 'Tulifo DB') return 1;
+
+      // 2. Secondarily sort by date (newest first)
+      return new Date(b.postedAt || 0) - new Date(a.postedAt || 0);
+    })
     .slice(0, limit);
 
   console.log(`[Aggregator] Done — ${sorted.length} jobs in ${Date.now() - totalStart}ms\n`);
