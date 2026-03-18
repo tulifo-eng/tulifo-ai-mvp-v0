@@ -145,8 +145,12 @@ async function scoreJobs(jobs, userProfile = {}) {
     };
   });
 
-  // Sort highest match first
-  scoredJobs.sort((a, b) => b.matchScore - a.matchScore);
+  // Sort highest match first, but keep Tulifo DB jobs at the very top
+  scoredJobs.sort((a, b) => {
+    if (a.source === 'Tulifo DB' && b.source !== 'Tulifo DB') return -1;
+    if (b.source === 'Tulifo DB' && a.source !== 'Tulifo DB') return 1;
+    return b.matchScore - a.matchScore;
+  });
 
   console.log(`[aiScoring] Done in ${Date.now() - start}ms`);
   return scoredJobs;
