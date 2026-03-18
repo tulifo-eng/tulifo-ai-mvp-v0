@@ -1,70 +1,84 @@
-# Getting Started with Create React App
+# Tulifo AI & Job Aggregator
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Tulifo AI is a comprehensive job aggregation platform. It searches multiple APIs and career pages simultaneously, runs scam/trust detection, scores jobs against the user's profile using Anthropics' Claude Haiku, and presents a sorted, high-priority list of top-tier jobs.
 
-## Available Scripts
+This repository holds the **Frontend (React)** and **Backend (Node/Express)**.
 
-    In the project directory, you can run:
+## Architecture
 
-### `npm start`
+*   **Frontend**: React (Create React App), styled with vanilla CSS.
+*   **Backend**: Node.js, Express.js. Powers the AI scoring, trust calculation, analytics, and job aggregation.
+*   **Database Setup**: The app actively manages *two* separate PostgreSQL / Supabase connections:
+    1.  **Backend Auth & Tracking DB (`SUPABASE_URL`)**: Stores analytics, user profiles, tracking events, feedback, and handles Google OAuth.
+    2.  **Scraper Jobs DB (`SCRAPER_DB_URL`)**: Direct PostgreSQL pool connection for querying full-text job results scraped directly from top-tier company career portals (Meta, Google, Apple, etc.) via the standalone `job-portal-scrapper` project.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Environment Configuration
 
-### `npm test`
+Copy the `.env.example` in both directories and add your keys.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Backend (`server/.env`)
+```env
+# 1. Main Backend Database (Auth, Tracking, Events)
+SUPABASE_URL=https://[YOUR-PROJECT].supabase.co
+SUPABASE_SERVICE_ROLE_KEY=ey...
 
-### `npm run build`
+# 2. Scraper Database (Direct PostgreSQL - For fetching vetted company jobs)
+# Get from Supabase -> Settings -> Database -> Connection string
+SCRAPER_DB_URL=postgresql://postgres.[scraper-project]:[password]@aws-0-region.pooler.supabase.com:6543/postgres
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# AI Scoring API
+ANTHROPIC_API_KEY=sk-ant-api03-...
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Third-Party Job APIs
+JSEARCH_API_KEY=...
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Port definitions (Optional)
+PORT=5050
+ADMIN_PORT=5051
+```
 
-### `npm run eject`
+### Frontend (`.env`)
+```env
+REACT_APP_SUPABASE_URL=https://[YOUR-PROJECT].supabase.co
+REACT_APP_SUPABASE_ANON_KEY=ey...
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## How to Run Locally
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+We use `concurrently` to run both the React app and Node servers with a single command.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1.  **Install everything**:
+    ```bash
+    npm install
+    cd server && npm install
+    cd ..
+    ```
 
-## Learn More
+2.  **Run frontend + backend simultaneously**:
+    ```bash
+    npm run dev
+    ```
+    *   *Frontend* starts on `http://localhost:3000`
+    *   *Backend API* starts on `http://localhost:5050`
+    *   *Admin UI API* starts on `http://localhost:5051`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Key Features
 
-### Code Splitting
+1.  **AI Match Scoring**: Sends job descriptions and user profiles to Anthropics API, returning a match score (1-100) and pros/cons.
+2.  **Trust Module**: Analyzes keywords to flag scams ("pay upfront", "wire transfer") and promotes vetted companies to the top.
+3.  **High-Priority Scraped Jobs**: Jobs queried from the `SCRAPER_DB_URL` are inherently trusted (Default Score 99) and pinned to the very top of the search results.
+4.  **Admin Panel**: Go to `/admin` or `/#admin` in the frontend (Default credentials: `admin`/`admin`). Configure sources, view metrics and API key management.
+5.  **Google OAuth**: Login via Supabase integration.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Database Migrations
 
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+For the **Scraper Database**, this backend requires the full-text search indexing on the `jobs` table to perform rapidly.
+Run the file `supabase/fulltext-search-index.sql` against your scraper database to establish GIN indexes across job titles and descriptions.
