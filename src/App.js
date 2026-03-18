@@ -1552,10 +1552,11 @@ export default function App() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const u = {
-          id:    session.user.id,
-          email: session.user.email,
-          name:  session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0],
-          guest: false,
+          id:     session.user.id,
+          email:  session.user.email,
+          name:   session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0],
+          avatar: session.user.user_metadata?.avatar_url || null,
+          guest:  false,
         };
         setUser(u);
         identifyUser(u.id, true);
@@ -1567,8 +1568,41 @@ export default function App() {
       if (window.location.hash === '#admin') setView('admin');
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) { setUser(null); setProfile(null); if (window.location.hash !== '#admin') setView('landing'); }
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!session) {
+        // User signed out
+        setUser(null);
+        setProfile(null);
+        if (window.location.hash !== '#admin') setView('landing');
+        return;
+      }
+      if (event === 'SIGNED_IN') {
+        // Fires after Google OAuth redirect lands back on the app
+        const su = session.user;
+        const u = {
+          id:    su.id,
+          email: su.email,
+          name:  su.user_metadata?.full_name || su.user_metadata?.name || su.email.split('@')[0],
+          avatar: su.user_metadata?.avatar_url || null,
+          guest: false,
+        };
+        setUser(u);
+        identifyUser(u.id, true);
+        trackEvent('login', 'auth', 'google');
+
+        // Load or create profile
+        const { data: existing } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
+        if (existing) {
+          setProfile(existing);
+        } else {
+          // First-time Google user — seed a default profile
+          const defaultProfile = { id: u.id, name: u.name, role: '', location: '', salary_min: null, skills: [] };
+          await supabase.from('profiles').upsert(defaultProfile);
+          setProfile(defaultProfile);
+        }
+
+        if (window.location.hash !== '#admin') setView('dashboard');
+      }
     });
     return () => listener.subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1590,8 +1624,15 @@ export default function App() {
     trackEvent('login', 'auth', u.guest ? 'guest' : 'email');
     if (u.guest) { setView('dashboard'); return; }
     if (supabase) {
-      const { data } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
-      if (data) setProfile(data);
+      const { data: existing } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
+      if (existing) {
+        setProfile(existing);
+      } else {
+        // First-time user (email/password signup or OAuth) — seed a default profile
+        const defaultProfile = { id: u.id, name: u.name, role: '', location: '', salary_min: null, skills: [] };
+        await supabase.from('profiles').upsert(defaultProfile);
+        setProfile(defaultProfile);
+      }
       setView('dashboard');
     } else {
       setView('dashboard');

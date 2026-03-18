@@ -8,6 +8,19 @@ module.exports = {
   // ✅ ACTIVE — fetching live data
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  supabasedb: {
+    name: 'Tulifo DB',
+    emoji: '🗄️',
+    type: 'database',
+    status: 'active',
+    enabled: true,
+    endpoint: 'postgresql (direct)',
+    rateLimit: 'unlimited',
+    requiresAuth: true,
+    credentialsNeeded: ['SUPABASE_DB_URL'],
+    notes: 'Jobs scraped from company career pages (Meta, Google, Apple, etc.) stored in Supabase PostgreSQL. Full-text search enabled.',
+  },
+
   jsearch: {
     name: 'JSearch',
     emoji: '🌐',

@@ -3,6 +3,7 @@
 
 // ── Category 1: Source Reliability ───────────────────────────────────────────
 const SOURCE_RELIABILITY = {
+  'Tulifo DB':         { score: 99, tier: 1, label: 'Direct Employer'},
   'JSearch':           { score: 88, tier: 1, label: 'Multi-source'  },
   'USAJobs':           { score: 98, tier: 1, label: 'Government'    },
   'Remotive':          { score: 88, tier: 1, label: 'Curated Remote' },

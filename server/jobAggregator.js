@@ -2,6 +2,7 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const jobSources = require('./config/jobSources');
 const { enrichWithTrust } = require('./trustScoring');
+const supabaseDb = require('./supabaseDb');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -611,6 +612,98 @@ function deduplicateJobs(jobs) {
   });
 }
 
+// ── Supabase DB (direct PostgreSQL with full-text search) ────────────────────
+
+async function fetchSupabaseJobs(query, location) {
+  if (!supabaseDb.isAvailable()) {
+    console.log('[SupabaseDB] Skipping — SUPABASE_DB_URL not configured');
+    return [];
+  }
+
+  console.log(`[SupabaseDB] Searching "${query}" in "${location}"...`);
+  const start = Date.now();
+
+  try {
+    let rows;
+    const searchTerms = (query || '').trim();
+    const locationTerm = (location || '').trim();
+
+    if (searchTerms.length >= 3) {
+      // Full-text search on title + description + company
+      // plainto_tsquery handles natural language input safely
+      let sql = `
+        SELECT *, ts_rank(
+          to_tsvector('english', coalesce(title,'') || ' ' || coalesce(description,'') || ' ' || coalesce(company,'')),
+          plainto_tsquery('english', $1)
+        ) AS rank
+        FROM jobs
+        WHERE is_active = true
+          AND to_tsvector('english', coalesce(title,'') || ' ' || coalesce(description,'') || ' ' || coalesce(company,''))
+              @@ plainto_tsquery('english', $1)
+      `;
+      const params = [searchTerms];
+
+      if (locationTerm) {
+        sql += ` AND location ILIKE $2`;
+        params.push(`%${locationTerm}%`);
+      }
+
+      sql += ` ORDER BY rank DESC LIMIT 50`;
+      rows = await supabaseDb.query(sql, params);
+    } else {
+      // Short or empty query — fetch recent active jobs with optional location filter
+      let sql = `SELECT * FROM jobs WHERE is_active = true`;
+      const params = [];
+
+      if (locationTerm) {
+        sql += ` AND location ILIKE $1`;
+        params.push(`%${locationTerm}%`);
+      }
+
+      sql += ` ORDER BY posted_at DESC LIMIT 50`;
+      rows = await supabaseDb.query(sql, params);
+    }
+
+    const jobs = rows.map(row => {
+      const salaryDisplay = row.salary_range_display || row.salary || 'Not listed';
+      return {
+        id: nextId(),
+        title: row.title || '',
+        company: row.company || 'Unknown',
+        location: row.location || 'Not specified',
+        salary: salaryDisplay,
+        salaryMin: row.salary_min || 0,
+        salaryMax: row.salary_max || 0,
+        tags: row.keywords || [],
+        description: row.description || '',
+        sections: {
+          responsibilities: row.responsibilities
+            ? row.responsibilities.split(/\n/).filter(s => s.trim().length > 5)
+            : [],
+          requirements: row.min_qualifications
+            ? row.min_qualifications.split(/\n/).filter(s => s.trim().length > 5)
+            : [],
+          benefits: row.compensation_details
+            ? row.compensation_details.split(/\n/).filter(s => s.trim().length > 5)
+            : [],
+        },
+        applyUrl: row.apply_url || row.source_url || '',
+        jobBoardUrls: generateJobBoardUrls(row.title || '', row.company || ''),
+        source: 'Tulifo DB',
+        sourceDetail: row.platform ? row.platform.charAt(0).toUpperCase() + row.platform.slice(1) : '',
+        postedAt: row.posted_at || new Date().toISOString(),
+        matchScore: 85,  // Higher default — these are direct company career page jobs
+      };
+    });
+
+    console.log(`[SupabaseDB] Got ${jobs.length} jobs in ${Date.now() - start}ms`);
+    return jobs;
+  } catch (err) {
+    console.error(`[SupabaseDB] Query failed: ${err.message}`);
+    return [];
+  }
+}
+
 // ── Main aggregator ───────────────────────────────────────────────────────────
 
 async function aggregateJobs({ query = '', location = '', limit = 100 } = {}) {
@@ -618,6 +711,11 @@ async function aggregateJobs({ query = '', location = '', limit = 100 } = {}) {
   console.log(`\n[Aggregator] Starting search: "${query}" in "${location}"`);
 
   const fetchers = [];
+
+  // Supabase DB — highest priority source (direct company career pages)
+  if (jobSources.supabasedb?.enabled) {
+    fetchers.push(fetchSupabaseJobs(query, location).catch(err => { console.error(`[SupabaseDB] Failed: ${err.message}`); return []; }));
+  }
 
   if (jobSources.jsearch.enabled) {
     fetchers.push(fetchJSearch(query, location).catch(err => { console.error(`[JSearch] Failed: ${err.message}`); return []; }));

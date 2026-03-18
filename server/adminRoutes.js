@@ -85,6 +85,7 @@ router.get('/health', (req, res) => {
       hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
       hasAdzunaKeys: !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY && process.env.ADZUNA_APP_ID !== 'your_app_id_here'),
       hasUSAJobsKey: !!(process.env.USAJOBS_API_KEY && process.env.USAJOBS_EMAIL),
+      hasSupabaseDbUrl: !!process.env.SUPABASE_DB_URL,
       nodeEnv: process.env.NODE_ENV || 'development',
     },
     memory: process.memoryUsage(),
