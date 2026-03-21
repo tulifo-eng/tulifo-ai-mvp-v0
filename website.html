@@ -10,10 +10,6 @@
   <meta property="og:url" content="https://tulifo.ai" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="theme-color" content="#060c1e" />
-  <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/tulifo-icon-white.svg" />
-  <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -698,14 +694,13 @@
 </head>
 <body>
 
-<div id="marketing-site">
 <!-- ════════════════════════════════════════════════════════
      HEADER
 ════════════════════════════════════════════════════════ -->
 <header id="site-header">
   <div class="header-inner">
     <a href="/" class="logo">
-      <img src="%PUBLIC_URL%/tulifo-logo-white.svg" alt="Tulifo AI" class="logo-img" />
+      <img src="public/tulifo-logo-white.svg" alt="Tulifo AI" class="logo-img" />
     </a>
     <nav class="header-nav">
       <a href="#how-it-works">How It Works</a>
@@ -715,8 +710,8 @@
       <a href="#testimonials">Reviews</a>
     </nav>
     <div class="header-right">
-      <button class="btn-sign-in" onclick="launchApp()">Sign In</button>
-      <button class="btn-start" onclick="launchApp()">Get Started Free →</button>
+      <button class="btn-sign-in" onclick="window.open('https://app.tulifo.ai','_blank')">Sign In</button>
+      <button class="btn-start" onclick="window.open('https://app.tulifo.ai','_blank')">Get Started Free →</button>
       <button class="mobile-toggle" id="mobileToggle" aria-label="Open menu">&#9776;</button>
     </div>
   </div>
@@ -748,7 +743,7 @@
         </p>
 
         <div class="hero-ctas fade4">
-          <button class="btn btn-primary" style="font-size:16px;padding:15px 34px;" onclick="launchApp()">
+          <button class="btn btn-primary" style="font-size:16px;padding:15px 34px;" onclick="window.open('https://app.tulifo.ai','_blank')">
             Start Chatting Free &nbsp;→
           </button>
           <button class="btn btn-ghost" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">
@@ -1106,7 +1101,7 @@
       <h2>Ready to find your next job?</h2>
       <p>Start a conversation with Tulifo AI. It's free — no account needed to search.</p>
       <div class="cta-btns">
-        <button class="btn-wh" onclick="launchApp()">Start Searching Free &nbsp;→</button>
+        <button class="btn-wh" onclick="window.open('https://app.tulifo.ai','_blank')">Start Searching Free &nbsp;→</button>
         <button class="btn-wh-out" onclick="window.location.href='mailto:hello@tulifo.ai'">Talk to Us</button>
       </div>
     </div>
@@ -1121,7 +1116,7 @@
     <div class="footer-grid">
       <div>
         <a href="/" class="logo" style="display:inline-flex;">
-          <img src="%PUBLIC_URL%/tulifo-logo-white.svg" alt="Tulifo AI" class="logo-img" />
+          <img src="public/tulifo-logo-white.svg" alt="Tulifo AI" class="logo-img" />
         </a>
         <p class="footer-brand-desc">
           AI-powered job search for every role, every industry, and every location. Trust-scored, scam-checked, and matched to you — so you apply smarter.
@@ -1140,7 +1135,7 @@
           <li><a href="#how-it-works">How It Works</a></li>
           <li><a href="#features">Features</a></li>
           <li><a href="#trust">Trust &amp; Safety</a></li>
-          <li><a href="#" onclick="launchApp();return false;">Search Jobs</a></li>
+          <li><a href="https://app.tulifo.ai" target="_blank">Search Jobs</a></li>
           <li><a href="#">Pricing</a></li>
           <li><a href="#">Browser Extension</a></li>
         </ul>
@@ -1440,19 +1435,6 @@ document.addEventListener('DOMContentLoaded', () => {
   buildFAQ();
   buildTestis();
 });
-</script>
-</div><!-- /marketing-site -->
-
-<!-- CRA mount point — shown when user clicks a CTA -->
-<noscript>You need to enable JavaScript to run this app.</noscript>
-<div id="root" style="display:none;position:fixed;inset:0;z-index:99999;overflow:auto;"></div>
-
-<script>
-function launchApp() {
-  document.getElementById('root').style.display = 'block';
-  document.getElementById('marketing-site').style.display = 'none';
-  if (window.__tulifoLaunch) window.__tulifoLaunch();
-}
 </script>
 </body>
 </html>

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
+import tulifoLogo from './logo.svg';
+import tulifoLogoWhite from './logo-white.svg';
 import JobCard from './components/JobCard';
 import { supabase } from './supabase';
 import AdminPanel from './AdminPanel';
@@ -444,12 +446,7 @@ function LandingPage({ onGetStarted }) {
       {/* ── NAV ── */}
       <nav style={{ position: 'relative', zIndex: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '16px 20px' : '20px 60px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 28px rgba(59,130,246,0.55)' }}>
-            <Zap size={19} color="#fff" />
-          </div>
-          <span style={{ fontSize: isMobile ? 18 : 21, fontWeight: 800, letterSpacing: '-0.5px' }}>
-            Tulifo <span style={{ background: 'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI</span>
-          </span>
+          <img src={tulifoLogoWhite} alt="Tulifo AI" style={{ height: isMobile ? 32 : 38 }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {!isMobile && ['Features', 'Boards', 'Pricing'].map(l => (
@@ -693,10 +690,7 @@ function LandingPage({ onGetStarted }) {
       {/* ── FOOTER ── */}
       <footer style={{ position: 'relative', zIndex: 10, borderTop: '1px solid rgba(255,255,255,0.06)', padding: isMobile ? '20px' : '28px 60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 8, background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Zap size={13} color="#fff" />
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>Tulifo AI</span>
+          <img src={tulifoLogoWhite} alt="Tulifo AI" style={{ height: 24, opacity: 0.5 }} />
         </div>
         <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>© {new Date().getFullYear()} Tulifo AI · Built for job seekers</span>
         <div style={{ display: 'flex', gap: 20 }}>
@@ -821,12 +815,7 @@ function AuthPage({ onLogin }) {
 
         {/* Logo */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(59,130,246,0.5)' }}>
-            <Zap size={18} color="#fff" />
-          </div>
-          <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
-            Tulifo <span style={{ background: 'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI</span>
-          </span>
+          <img src={tulifoLogoWhite} alt="Tulifo AI" style={{ height: 36 }} />
         </div>
 
         {/* Center copy */}
@@ -1174,13 +1163,8 @@ function Dashboard({ user, userProfile, setProfile, onLogout }) {
       <header style={{ height: 56, background: '#fff', borderBottom: '1px solid #e8edf5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', flexShrink: 0, boxShadow: '0 1px 0 #e8edf5' }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: isMobile ? 100 : 160 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#2563eb,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(37,99,235,0.35)' }}>
-            <Zap size={15} color="#fff" />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', letterSpacing: '-0.3px' }}>
-            Tulifo <span style={{ background: 'linear-gradient(90deg,#2563eb,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI</span>
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', minWidth: isMobile ? 100 : 160 }}>
+          <img src={tulifoLogo} alt="Tulifo AI" style={{ height: 28 }} />
         </div>
 
         {/* Center tabs */}
@@ -1545,6 +1529,12 @@ export default function App() {
   const [user, setUser]             = useState(null);
   const [userProfile, setProfile]   = useState(null);
   const [sessionLoading, setLoading] = useState(!!supabase && !isAdminHash);
+
+  // Expose setView so the marketing page can trigger the auth screen directly
+  useEffect(() => {
+    window.__tulifoLaunch = () => setView('auth');
+    return () => { delete window.__tulifoLaunch; };
+  }, []);
 
   // Restore session on mount
   useEffect(() => {
