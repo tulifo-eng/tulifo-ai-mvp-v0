@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users can read own profile"   ON profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can read own profile"   ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
 -- ── saved_jobs ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS saved_jobs (
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS saved_jobs (
   UNIQUE(user_id, job_id)
 );
 ALTER TABLE saved_jobs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users can manage own saved jobs" ON saved_jobs FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own saved jobs" ON saved_jobs FOR ALL USING (auth.uid() = user_id);
 
 -- ── discarded_jobs ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS discarded_jobs (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS discarded_jobs (
   UNIQUE(user_id, job_id)
 );
 ALTER TABLE discarded_jobs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users can manage own discarded jobs" ON discarded_jobs FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own discarded jobs" ON discarded_jobs FOR ALL USING (auth.uid() = user_id);
 
 -- ── chat_messages ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chat_messages (
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 CREATE INDEX IF NOT EXISTS chat_messages_user_id_idx ON chat_messages(user_id, created_at DESC);
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users can manage own chat messages" ON chat_messages FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own chat messages" ON chat_messages FOR ALL USING (auth.uid() = user_id);
 
 -- ── job_matches ───────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS job_matches (
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS job_matches (
   UNIQUE(user_id, job_id)
 );
 ALTER TABLE job_matches ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users can manage own job matches" ON job_matches FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own job matches" ON job_matches FOR ALL USING (auth.uid() = user_id);
 
 -- ── feedback ──────────────────────────────────────────────────────────────────
 -- Stores user feedback submissions. Only accessible via service role key.
@@ -81,8 +81,8 @@ CREATE TABLE IF NOT EXISTS feedback (
 CREATE INDEX IF NOT EXISTS feedback_ts_idx ON feedback(ts DESC);
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
 -- Public can insert (submitting feedback) but not read
-CREATE POLICY IF NOT EXISTS "Anyone can submit feedback" ON feedback FOR INSERT WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "No public read of feedback"  ON feedback FOR SELECT USING (false);
+CREATE POLICY "Anyone can submit feedback" ON feedback FOR INSERT WITH CHECK (true);
+CREATE POLICY "No public read of feedback"  ON feedback FOR SELECT USING (false);
 
 -- ── admin_search_events ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS admin_search_events (
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS admin_search_events (
 );
 CREATE INDEX IF NOT EXISTS admin_search_events_ts_idx ON admin_search_events(ts DESC);
 ALTER TABLE admin_search_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "No public access to search events" ON admin_search_events FOR ALL USING (false);
+CREATE POLICY "No public access to search events" ON admin_search_events FOR ALL USING (false);
 
 -- ── admin_error_events ────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS admin_error_events (
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS admin_error_events (
 );
 CREATE INDEX IF NOT EXISTS admin_error_events_ts_idx ON admin_error_events(ts DESC);
 ALTER TABLE admin_error_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "No public access to error events" ON admin_error_events FOR ALL USING (false);
+CREATE POLICY "No public access to error events" ON admin_error_events FOR ALL USING (false);
 
 -- ── user_sessions ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 );
 CREATE INDEX IF NOT EXISTS user_sessions_first_seen_idx ON user_sessions(first_seen_at DESC);
 ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "No public access to sessions" ON user_sessions FOR ALL USING (false);
+CREATE POLICY "No public access to sessions" ON user_sessions FOR ALL USING (false);
 
 -- ── user_events ───────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS user_events (
@@ -169,4 +169,4 @@ CREATE TABLE IF NOT EXISTS user_events (
 CREATE INDEX IF NOT EXISTS user_events_session_idx  ON user_events(session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS user_events_type_idx     ON user_events(event_type, created_at DESC);
 ALTER TABLE user_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "No public access to events" ON user_events FOR ALL USING (false);
+CREATE POLICY "No public access to events" ON user_events FOR ALL USING (false);

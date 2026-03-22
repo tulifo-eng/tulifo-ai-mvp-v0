@@ -1453,6 +1453,17 @@ function launchApp() {
   document.getElementById('marketing-site').style.display = 'none';
   if (window.__tulifoLaunch) window.__tulifoLaunch();
 }
+
+// Auto-launch if returning from OAuth redirect or if there is an active Supabase session
+if (
+  window.location.hash.includes('access_token=') || 
+  window.location.hash.includes('error_description=') ||
+  window.location.pathname !== '/' ||
+  Object.keys(localStorage).some(k => k.includes('-auth-token')) // Supabase generic token check
+) {
+  document.getElementById('root').style.display = 'block';
+  document.getElementById('marketing-site').style.display = 'none';
+}
 </script>
 </body>
 </html>
