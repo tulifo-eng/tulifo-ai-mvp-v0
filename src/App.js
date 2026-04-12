@@ -788,7 +788,14 @@ function AuthPage({ onLogin }) {
         onLogin({ id: u.id, name: name || email.split('@')[0], email, guest: false });
       }
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      const lowerMsg = err?.message?.toLowerCase() || '';
+      const isInvalidEmail =
+        err?.code === 'email_address_invalid' ||
+        (lowerMsg.includes('email address') && lowerMsg.includes('invalid'));
+      const friendlyMsg = isInvalidEmail
+        ? 'Please use a valid email address.'
+        : err?.message;
+      setError(friendlyMsg || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

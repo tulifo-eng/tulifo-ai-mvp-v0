@@ -1,5 +1,6 @@
 // Admin API routes — protected by username/password login
 const express = require('express');
+const crypto  = require('crypto');
 const router = express.Router();
 const { getOverview, getRecentSearches, getRecentErrors } = require('./analytics');
 const { getAllFeedback, getFeedbackStats }                = require('./feedbackStore');
@@ -8,15 +9,56 @@ const { listKeys, setKey, deleteKey }                    = require('./apiKeyStor
 const jobSources = require('./config/jobSources');
 // trackingStore loaded lazily in route handler (avoids circular dep issues)
 
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'admin';
-const SESSION_TOKEN  = 'tulifo-admin-authenticated';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+  console.warn('[Admin] ADMIN_USERNAME / ADMIN_PASSWORD not set — admin panel login is disabled until both env vars are provided.');
+}
+
+// In-memory session store: token -> expiresAt (ms since epoch).
+// Tokens are random 256-bit hex strings, generated fresh at each login.
+// Restarting the process invalidates all sessions — that's intentional.
+const sessions = new Map();
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Constant-time string comparison (hash-first so length differences don't leak).
+function safeEqual(a, b) {
+  const ah = crypto.createHash('sha256').update(String(a)).digest();
+  const bh = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(ah, bh);
+}
+
+function pruneExpiredSessions() {
+  const now = Date.now();
+  for (const [token, expiresAt] of sessions.entries()) {
+    if (expiresAt <= now) sessions.delete(token);
+  }
+}
 
 // ── POST /api/admin/login (public) ────────────────────────────────────────────
 router.post('/login', (req, res) => {
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    return res.status(503).json({ error: 'Admin panel is not configured on this server' });
+  }
   const { username, password } = req.body || {};
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    return res.json({ token: SESSION_TOKEN });
+  if (!username || !password) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+
+  // Always run both comparisons to keep timing uniform.
+  const userOk = safeEqual(username, ADMIN_USERNAME);
+  const passOk = safeEqual(password, ADMIN_PASSWORD);
+
+  if (userOk && passOk) {
+    pruneExpiredSessions();
+    const token = generateToken();
+    sessions.set(token, Date.now() + SESSION_TTL_MS);
+    return res.json({ token });
   }
   res.status(401).json({ error: 'Invalid username or password' });
 });
@@ -24,7 +66,12 @@ router.post('/login', (req, res) => {
 // ── Auth middleware (all routes below require valid token) ────────────────────
 router.use((req, res, next) => {
   const provided = req.headers['x-admin-secret'];
-  if (provided !== SESSION_TOKEN) {
+  if (!provided || typeof provided !== 'string') {
+    return res.status(401).json({ error: 'Unauthorized — please log in' });
+  }
+  const expiresAt = sessions.get(provided);
+  if (!expiresAt || expiresAt <= Date.now()) {
+    sessions.delete(provided);
     return res.status(401).json({ error: 'Unauthorized — please log in' });
   }
   next();
