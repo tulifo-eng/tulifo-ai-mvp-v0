@@ -1539,7 +1539,10 @@ export default function App() {
   // Restore session on mount
   useEffect(() => {
     if (!supabase) return;
+    let cancelled = false;
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (cancelled) return;
       if (session?.user) {
         const u = {
           id:     session.user.id,
@@ -1551,14 +1554,15 @@ export default function App() {
         setUser(u);
         identifyUser(u.id, true);
         const { data } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
-        if (data) setProfile(data);
-        setView('dashboard');
+        if (!cancelled && data) setProfile(data);
+        if (!cancelled) setView('dashboard');
       }
-      setLoading(false);
-      if (window.location.hash === '#admin') setView('admin');
+      if (!cancelled) setLoading(false);
+      if (!cancelled && window.location.hash === '#admin') setView('admin');
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
       if (!session) {
         // User signed out
         setUser(null);
@@ -1582,19 +1586,23 @@ export default function App() {
 
         // Load or create profile
         const { data: existing } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
+        if (cancelled) return;
         if (existing) {
           setProfile(existing);
         } else {
           // First-time Google user — seed a default profile
           const defaultProfile = { id: u.id, name: u.name, role: '', location: '', salary_min: null, skills: [] };
           await supabase.from('profiles').upsert(defaultProfile);
-          setProfile(defaultProfile);
+          if (!cancelled) setProfile(defaultProfile);
         }
 
-        if (window.location.hash !== '#admin') setView('dashboard');
+        if (!cancelled && window.location.hash !== '#admin') setView('dashboard');
       }
     });
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      listener.subscription.unsubscribe();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
