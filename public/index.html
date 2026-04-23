@@ -1458,6 +1458,7 @@ function launchApp() {
 if (
   window.location.hash.includes('access_token=') || 
   window.location.hash.includes('error_description=') ||
+  window.location.search.includes('code=') ||
   window.location.pathname !== '/' ||
   Object.keys(localStorage).some(k => k.includes('-auth-token')) // Supabase generic token check
 ) {
