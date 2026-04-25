@@ -37,7 +37,7 @@ Tulifo AI is an intelligent job search platform. Users describe what job they wa
 
 The platform has two operational modes:
 - **Guest mode** — anyone can search without signing in
-- **Authenticated mode** — Supabase auth (Google OAuth or email), saves chat history and profile
+- **Authenticated mode** — Google sign-in (Google Identity Services) or email/password, both verified by the backend at `/api/auth/*`. Saves chat history and profile to Supabase
 
 ---
 
@@ -104,7 +104,7 @@ tulifo-ai/
 │   ├── AdminPanel.js             # Full admin dashboard UI
 │   ├── index.js                  # React DOM entry point
 │   ├── index.css                 # Base CSS reset
-│   ├── supabase.js               # Supabase client initialization
+│   ├── supabase.js               # Supabase client initialization (DB-only; auth is server-side)
 │   ├── tracker.js                # Client-side event tracking
 │   └── components/
 │       ├── JobCard.jsx           # Job listing card (main UI component)
@@ -118,6 +118,7 @@ tulifo-ai/
 │   ├── trustStats.js             # Trust score metrics tracker
 │   ├── analytics.js              # In-memory analytics (synced to Supabase)
 │   ├── adminRoutes.js            # Admin API route handlers
+│   ├── authRoutes.js             # /api/auth/{google,signup,login} — verifies and mints JWTs
 │   ├── trackingRoutes.js         # User behavior tracking endpoints
 │   ├── trackingStore.js          # In-memory session/event store
 │   ├── feedbackStore.js          # User feedback (bug/praise/feature)
@@ -226,8 +227,10 @@ Navigate to: `http://localhost:3000/#admin`
 | `ADZUNA_APP_KEY` | Recommended | Adzuna API credentials |
 | `USAJOBS_API_KEY` | Optional | USA government jobs |
 | `USAJOBS_EMAIL` | Optional | Required alongside USAJOBS_API_KEY |
-| `SUPABASE_URL` | Optional | Supabase project URL (analytics persistence) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Optional | Supabase service role key (admin writes) |
+| `SUPABASE_URL` | Yes (for auth) | Supabase project URL — same project as the frontend |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes (for auth) | Service role key — used by the auth endpoints to create users via the admin API and bypass RLS for tracking writes |
+| `SUPABASE_JWT_SECRET` | Yes (for auth) | Used to sign session JWTs so RLS policies that check `auth.uid()` keep working. Dashboard → Project Settings → API → JWT Settings |
+| `GOOGLE_CLIENT_ID` | Yes (for Google login) | Same Web Client ID used on the frontend; the auth route verifies Google ID tokens against this audience |
 
 ### Frontend — `.env` (in tulifo-ai root)
 
@@ -235,10 +238,11 @@ Navigate to: `http://localhost:3000/#admin`
 |----------|----------|-------------|
 | `REACT_APP_API_URL` | Yes | Main backend URL e.g. `http://localhost:5050` |
 | `REACT_APP_ADMIN_URL` | Yes | Admin backend URL e.g. `http://localhost:5051` |
-| `REACT_APP_SUPABASE_URL` | Optional | Supabase project URL (user auth) |
-| `REACT_APP_SUPABASE_ANON_KEY` | Optional | Supabase anon/public key |
+| `REACT_APP_SUPABASE_URL` | Optional | Supabase project URL — used only for `supabase.from(...)` DB calls |
+| `REACT_APP_SUPABASE_ANON_KEY` | Optional | Supabase anon/public key — paired with the JWT we mint server-side |
+| `REACT_APP_GOOGLE_CLIENT_ID` | Yes (for Google login) | Google OAuth Web Client ID |
 
-> Without Supabase vars, the app runs in **guest-only mode** with no authentication.
+> Without Supabase vars, the app runs in **guest-only mode** with no authentication or persistence.
 
 ---
 
@@ -574,22 +578,39 @@ Supabase is optional. Without it, the app works in guest-only mode with in-memor
 
 | Table | Purpose |
 |-------|---------|
+| `auth.users` | Managed by Supabase. Created via the admin API by `authRoutes.js`; FK target for the rest |
 | `profiles` | User job preferences (skills, location, job title) |
+| `saved_jobs` | Jobs the user has saved |
+| `discarded_jobs` | Jobs the user has dismissed |
 | `chat_messages` | Persisted chat history per user |
+| `job_matches` | AI match scores recorded per (user, job) |
+| `user_sessions` | Tracking sessions (geo, device, UTM) |
+| `user_events` | Tracking events (clicks, page views, custom) |
 | `admin_search_events` | Search analytics (synced from in-memory on interval) |
 | `admin_error_events` | Error log (synced from in-memory on interval) |
+| `feedback` | User-submitted feedback |
 
 ### Two Supabase clients
 
-1. **Frontend client** (`src/supabase.js`) — Uses anon key. Handles auth (Google OAuth + email), reads/writes `profiles` and `chat_messages`.
-2. **Backend client** (`server/supabaseAdmin.js`) — Uses service role key. Writes analytics events.
+1. **Frontend client** (`src/supabase.js`) — Uses the anon key. **DB-only** — auth is handled by our own backend. After login, the frontend calls `supabase.auth.setSession({ access_token, refresh_token: access_token })` with the JWT returned by `/api/auth/*` so subsequent `supabase.from(...)` calls carry an Authorization header that satisfies `auth.uid()` RLS policies. PKCE/`detectSessionInUrl` are explicitly disabled.
+2. **Backend client** (`server/supabaseAdmin.js`) — Uses the service role key. Used by `server/authRoutes.js` to create/lookup users via `auth.admin.*`, by `server/trackingStore.js` to persist analytics, and by other server-side data writes that need to bypass RLS.
+
+### Authentication flow
+
+All authentication routes through our own backend, not Supabase's GoTrue endpoints:
+
+- `POST /api/auth/google` — verifies a Google ID token via `google-auth-library`, finds-or-creates the user in `auth.users`, mints an HS256 JWT signed with `SUPABASE_JWT_SECRET`.
+- `POST /api/auth/signup` — validates input, creates a user via `supabaseAdmin.auth.admin.createUser({ email, password, ... })` (Supabase handles the bcrypt hashing into `auth.users.encrypted_password`), mints the same JWT.
+- `POST /api/auth/login` — verifies the password via `supabaseAdmin.auth.signInWithPassword`, **immediately calls `signOut({ scope: 'local' })`** to drop the user session from the admin client (otherwise subsequent `supabaseAdmin.from(...)` calls in the same process start hitting RLS as the user instead of as service-role). Then mints the JWT.
+
+The minted JWT carries the standard Supabase claims (`sub`, `aud: 'authenticated'`, `role: 'authenticated'`) so RLS policies like `auth.uid() = user_id` keep working unchanged. We do not issue refresh tokens — when the JWT expires (default 7 days, see `SESSION_TTL_SECONDS` in `authRoutes.js`), the user signs in again.
 
 ### Setting up Supabase
 
 1. Create a project at supabase.com
-2. Create the tables above (schema inferred from code)
-3. Enable Google OAuth in Authentication → Providers if needed
-4. Add credentials to both `.env` files (see Section 5)
+2. Run `supabase/persistence-schema.sql` against the project (idempotent — `CREATE TABLE IF NOT EXISTS`)
+3. **Authentication → Providers → Email** must be enabled (email/password login uses `signInWithPassword` for verification)
+4. Add credentials to both `.env` files (see Section 5). The Google provider in Supabase does **not** need to be enabled — Google login is verified server-side via `google-auth-library`, not via Supabase's GoTrue OAuth flow.
 
 ---
 

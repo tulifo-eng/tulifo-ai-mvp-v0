@@ -6,6 +6,7 @@ import JobCard from './components/JobCard';
 import { supabase } from './supabase';
 import AdminPanel from './AdminPanel';
 import { initTracker, trackEvent, identifyUser, startHeartbeat } from './tracker';
+import { GoogleLogin } from '@react-oauth/google';
 import {
   Search, Bookmark, LogIn, User, Briefcase,
   MapPin, DollarSign, Zap, Send, X, Sparkles, Bot, ArrowRight,
@@ -745,58 +746,69 @@ function AuthPage({ onLogin }) {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
 
-  const switchMode = () => { setMode(m => m === 'login' ? 'signup' : 'login'); setEmail(''); setName(''); setPassword(''); setError(''); };
+  const switchMode = () => {
+    setMode(m => m === 'login' ? 'signup' : 'login');
+    setEmail(''); setName(''); setPassword(''); setError('');
+  };
 
-  const handleGoogle = async () => {
-    if (!supabase) { setError('Supabase is not configured.'); return; }
+  const completeLogin = async ({ access_token, user, provider }) => {
+    if (supabase) {
+      await supabase.auth.setSession({ access_token, refresh_token: access_token });
+    }
+    onLogin({ ...user, guest: false, provider });
+  };
+
+  const handleGoogleSuccess = async (response) => {
+    if (!response?.credential) { setError('No Google credential received.'); return; }
     setLoading(true);
     setError('');
-    const { error: authErr } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    });
-    if (authErr) { setError(authErr.message); setLoading(false); }
-    // On success Supabase redirects the page — no further action needed here
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || body.message || `Sign in failed (${res.status})`);
+      }
+      const { access_token, user } = await res.json();
+      await completeLogin({ access_token, user, provider: 'google' });
+    } catch (err) {
+      setError(err.message || 'Sign in failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google sign-in was cancelled or failed. Please try again.');
+    setLoading(false);
   };
 
   const handleSubmit = async () => {
     if (!email || !password) { setError('Please enter your email and password.'); return; }
+    if (mode === 'signup' && password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+
     setLoading(true);
     setError('');
     try {
-      if (!supabase) {
-        onLogin({ name: name || email.split('@')[0] || 'User', email, guest: false, id: 'mock-' + Date.now() });
-        return;
+      const apiUrl = process.env.REACT_APP_API_URL || '';
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      const body = mode === 'login' ? { email, password } : { email, password, name };
+      const res = await fetch(`${apiUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `${mode === 'login' ? 'Sign in' : 'Sign up'} failed`);
       }
-      if (mode === 'login') {
-        const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (authErr) throw authErr;
-        const u = data.user;
-        onLogin({ id: u.id, name: u.user_metadata?.name || email.split('@')[0], email, guest: false });
-      } else {
-        const { data, error: authErr } = await supabase.auth.signUp({
-          email, password, options: { data: { name: name || email.split('@')[0] } }
-        });
-        if (authErr) throw authErr;
-        if (!data.session) {
-          // Email confirmation required
-          setError('Account created! Check your email to confirm your address, then sign in.');
-          setMode('login');
-          return;
-        }
-        const u = data.user;
-        onLogin({ id: u.id, name: name || email.split('@')[0], email, guest: false });
-      }
+      const { access_token, user } = await res.json();
+      await completeLogin({ access_token, user, provider: 'email' });
     } catch (err) {
-      const lowerMsg = err?.message?.toLowerCase() || '';
-      const isInvalidEmail =
-        err?.code === 'email_address_invalid' ||
-        (lowerMsg.includes('email address') && lowerMsg.includes('invalid'));
-      const friendlyMsg = isInvalidEmail
-        ? 'Please use a valid email address.'
-        : err?.message;
-      setError(friendlyMsg || 'Something went wrong. Please try again.');
-    } finally {
+      setError(err.message || 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
@@ -885,7 +897,7 @@ function AuthPage({ onLogin }) {
           {/* Mode tabs */}
           <div style={{ display: 'flex', background: '#eef2f9', borderRadius: 12, padding: 4, marginBottom: 24 }}>
             {[['login','Sign In'], ['signup','Create Account']].map(([v, label]) => (
-              <button key={v} onClick={() => setMode(v)} style={{
+              <button key={v} onClick={() => { setMode(v); setError(''); }} style={{
                 flex: 1, padding: '9px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, transition: 'all 0.2s',
                 background: mode === v ? '#fff' : 'transparent',
@@ -895,16 +907,18 @@ function AuthPage({ onLogin }) {
             ))}
           </div>
 
-          {/* Google */}
-          <button className="google-btn" onClick={handleGoogle} disabled={loading}>
-            <svg width="18" height="18" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            </svg>
-            Continue with Google
-          </button>
+          {/* Google sign-in */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10, opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              theme="outline"
+              size="large"
+              shape="rectangular"
+              width={isMobile ? 300 : 360}
+              text="continue_with"
+            />
+          </div>
 
           {/* Guest */}
           <button className="guest-btn" onClick={() => onLogin({ name: 'Guest', email: 'guest@tulifo.ai', guest: true })} style={{ marginTop: 10 }}>
@@ -931,12 +945,7 @@ function AuthPage({ onLogin }) {
               <AuthField field="email" icon={<Briefcase size={15} />} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" type="email" focused={focused} setFocused={setFocused} />
             </div>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>Password</label>
-                {mode === 'login' && (
-                  <button style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Forgot password?</button>
-                )}
-              </div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Password</label>
               <AuthField field="password" icon={<Zap size={15} />} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" type="password" focused={focused} setFocused={setFocused} />
               {mode === 'signup' && password.length > 0 && (
                 <div style={{ marginTop: 8 }}>
@@ -1543,9 +1552,10 @@ export default function App() {
     return () => { delete window.__tulifoLaunch; };
   }, []);
 
-  // Restore session on mount
+  // Restore session on mount. Auth happens via our own /api/auth/google flow —
+  // this effect just picks up any session the user had persisted in localStorage.
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) { setLoading(false); return; }
     let cancelled = false;
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -1568,42 +1578,12 @@ export default function App() {
       if (!cancelled && window.location.hash === '#admin') setView('admin');
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
-      if (!session) {
-        // User signed out
+      if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
         setUser(null);
         setProfile(null);
         if (window.location.hash !== '#admin') setView('landing');
-        return;
-      }
-      if (event === 'SIGNED_IN') {
-        // Fires after Google OAuth redirect lands back on the app
-        const su = session.user;
-        const u = {
-          id:    su.id,
-          email: su.email,
-          name:  su.user_metadata?.full_name || su.user_metadata?.name || su.email.split('@')[0],
-          avatar: su.user_metadata?.avatar_url || null,
-          guest: false,
-        };
-        setUser(u);
-        identifyUser(u.id, true);
-        trackEvent('login', 'auth', 'google');
-
-        // Load or create profile
-        const { data: existing } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
-        if (cancelled) return;
-        if (existing) {
-          setProfile(existing);
-        } else {
-          // First-time Google user — seed a default profile
-          const defaultProfile = { id: u.id, name: u.name, role: '', location: '', salary_min: null, skills: [] };
-          await supabase.from('profiles').upsert(defaultProfile);
-          if (!cancelled) setProfile(defaultProfile);
-        }
-
-        if (!cancelled && window.location.hash !== '#admin') setView('dashboard');
       }
     });
     return () => {
@@ -1626,7 +1606,7 @@ export default function App() {
   const handleLogin = async (u) => {
     setUser(u);
     identifyUser(u.id || u.email, true);
-    trackEvent('login', 'auth', u.guest ? 'guest' : 'email');
+    trackEvent('login', 'auth', u.guest ? 'guest' : (u.provider || 'google'));
     if (u.guest) { setView('dashboard'); return; }
     if (supabase) {
       const { data: existing } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
@@ -1645,7 +1625,11 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    if (supabase && user && !user.guest) await supabase.auth.signOut();
+    // scope: 'local' just clears localStorage. We don't call /auth/v1/logout
+    // because the JWT we minted isn't tied to a real Supabase auth session.
+    if (supabase && user && !user.guest) {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+    }
     setUser(null);
     setProfile(null);
     trackEvent('logout', 'auth', '');

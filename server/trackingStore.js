@@ -11,12 +11,17 @@ const events   = [];
 let _idCtr = 0;
 function uid() { return `${Date.now()}-${++_idCtr}`; }
 
+// auth.users(id) is a UUID — guests pass an email as their tracking id, which
+// would fail FK/type validation. Coerce non-UUID values to null.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function uuidOrNull(v) { return v && UUID_RE.test(v) ? v : null; }
+
 // ── Session helpers ────────────────────────────────────────────────────────────
 
 function sessionToRow(s) {
   return {
     session_id:           s.sessionId,
-    user_id:              s.userId        || null,
+    user_id:              uuidOrNull(s.userId),
     is_logged_in:         s.isLoggedIn    || false,
     ip_address:           s.ip            || null,
     country:              s.geo?.country      || null,
@@ -104,7 +109,7 @@ function upsertSession(data) {
   const s = { ...data, firstSeenAt: new Date().toISOString(), lastSeenAt: new Date().toISOString() };
   sessions.push(s);
   if (supabase) {
-    supabase.from('user_sessions').upsert(sessionToRow(s))
+    supabase.from('user_sessions').upsert(sessionToRow(s), { onConflict: 'session_id' })
       .then(({ error }) => { if (error) console.error('[Tracking] Session insert error:', error.message); });
   }
   return s;
@@ -120,7 +125,7 @@ function touchSession(sessionId, { durationSecs, pageViews, actionsCount, userId
   if (userId        != null) s.userId        = userId;
   if (isLoggedIn    != null) s.isLoggedIn    = isLoggedIn;
   if (supabase) {
-    supabase.from('user_sessions').upsert(sessionToRow(s))
+    supabase.from('user_sessions').upsert(sessionToRow(s), { onConflict: 'session_id' })
       .then(({ error }) => { if (error) console.error('[Tracking] Session touch error:', error.message); });
   }
 }
@@ -141,7 +146,7 @@ function addEvent(data) {
   if (supabase) {
     supabase.from('user_events').insert({
       session_id:     e.sessionId  || null,
-      user_id:        e.userId     || null,
+      user_id:        uuidOrNull(e.userId),
       event_type:     e.type,
       event_category: e.category   || null,
       event_label:    e.label      || null,

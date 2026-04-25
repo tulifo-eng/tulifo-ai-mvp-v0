@@ -7,6 +7,7 @@ const { addFeedback } = require('./feedbackStore');
 const { scoreJobs } = require('./aiScoring');
 const analytics = require('./analytics');
 const adminRoutes = require('./adminRoutes');
+const authRoutes = require('./authRoutes');
 const trackingRoutes = require('./trackingRoutes');
 const perfMiddleware = require('./perfMiddleware');
 const jobSources = require('./config/jobSources');
@@ -19,6 +20,7 @@ app.use(cors({
   ]
 }));
 app.use(express.json({ limit: '2mb' }));
+app.use('/api/auth', authRoutes);
 app.use('/api/track', trackingRoutes);
 app.use('/api/admin', adminRoutes);    // also on main port for production (Render)
 app.use(perfMiddleware);
